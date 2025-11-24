@@ -68,6 +68,8 @@ export default function ExpenseScreen() {
     }
 
     const today = new Date().toISOString().slice(0, 10);
+    console.log("Adding expense:", amountNumber, trimmedCategory, trimmedNote, today);
+    
     await db.runAsync(
       'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?);',
       [amountNumber, trimmedCategory, trimmedNote || null, today]
@@ -108,7 +110,7 @@ export default function ExpenseScreen() {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           amount REAL NOT NULL,
           category TEXT NOT NULL,
-          note TEXT
+          note TEXT,
           date TEXT NOT NULL
         );
       `);
@@ -120,7 +122,14 @@ export default function ExpenseScreen() {
   }, []);
 
    const filteredExpenses = applyFilter(expenses);
-   
+   const total = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+   const categoryTotals = {};
+    filteredExpenses.forEach((e) => {
+  if (!categoryTotals[e.category]) {
+    categoryTotals[e.category] = 0;
+  }
+  categoryTotals[e.category] += e.amount;
+  });
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Student Expense Tracker</Text>
@@ -155,6 +164,18 @@ export default function ExpenseScreen() {
         <Button title="All" onPress={() => setFilter("all")} />
         <Button title="This Week" onPress={() => setFilter("week")} />
         <Button title="This Month" onPress={() => setFilter("month")} />
+      </View>
+
+      <Text style={{ color: "white", marginBottom: 10, fontSize: 18 }}>
+        Total Spending: ${total.toFixed(2)}
+        </Text>
+
+      <View style={{ marginBottom: 12 }}>
+        {Object.entries(categoryTotals).map(([cat, amt]) => (
+     <Text key={cat} style={{ color: "#fbbf24" }}>
+        {cat}: ${amt.toFixed(2)}
+      </Text>
+        ))}
       </View>
     
 
