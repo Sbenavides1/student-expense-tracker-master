@@ -41,11 +41,12 @@ export default function ExpenseScreen() {
       return;
     }
 
+    const today = new Date().toISOString().slice(0, 10);
     await db.runAsync(
-      'INSERT INTO expenses (amount, category, note) VALUES (?, ?, ?);',
-      [amountNumber, trimmedCategory, trimmedNote || null]
+      'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?);',
+      [amountNumber, trimmedCategory, trimmedNote || null, today]
     );
-
+    
     setAmount('');
     setCategory('');
     setNote('');
@@ -82,6 +83,7 @@ export default function ExpenseScreen() {
           amount REAL NOT NULL,
           category TEXT NOT NULL,
           note TEXT
+          date TEXT NOT NULL
         );
       `);
 
