@@ -18,6 +18,32 @@ export default function ExpenseScreen() {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
+  const [filter, setFilter] = useState("all");
+
+  function applyFilter(list) {
+  if (filter === "all") {
+    return list;
+  }
+
+  const now = new Date();
+
+  return list.filter((item) => {
+    const date = new Date(item.date);
+
+    if (filter === "week") {
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      return date >= startOfWeek;
+    }
+
+    if (filter === "month") {
+      return (
+        date.getMonth() === now.getMonth() &&
+        date.getFullYear() === now.getFullYear()
+      );
+    }
+  });
+}
 
   const loadExpenses = async () => {
     const rows = await db.getAllAsync(
@@ -46,7 +72,7 @@ export default function ExpenseScreen() {
       'INSERT INTO expenses (amount, category, note, date) VALUES (?, ?, ?);',
       [amountNumber, trimmedCategory, trimmedNote || null, today]
     );
-    
+
     setAmount('');
     setCategory('');
     setNote('');
@@ -93,6 +119,8 @@ export default function ExpenseScreen() {
     setup();
   }, []);
 
+   const filteredExpenses = applyFilter(expenses);
+   
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.heading}>Student Expense Tracker</Text>
@@ -123,8 +151,15 @@ export default function ExpenseScreen() {
         <Button title="Add Expense" onPress={addExpense} />
       </View>
 
+      <View style={{ flexDirection: "row", gap: 8, marginVertical: 10 }}>
+        <Button title="All" onPress={() => setFilter("all")} />
+        <Button title="This Week" onPress={() => setFilter("week")} />
+        <Button title="This Month" onPress={() => setFilter("month")} />
+      </View>
+    
+
       <FlatList
-        data={expenses}
+        data={filteredExpenses}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderExpense}
         ListEmptyComponent={
