@@ -19,6 +19,10 @@ export default function ExpenseScreen() {
   const [category, setCategory] = useState('');
   const [note, setNote] = useState('');
   const [filter, setFilter] = useState("all");
+  const [editing, setEditing] = useState(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editNote, setEditNote] = useState("");
 
   function applyFilter(list) {
   if (filter === "all") {
@@ -87,7 +91,20 @@ export default function ExpenseScreen() {
     console.log("DB CONTENT NOW:", rows);
   };
 
-
+    const saveEdit = async () => {
+    const updatedAmount = parseFloat(editAmount);
+    if (isNaN(updatedAmount) || updatedAmount <= 0) return;
+    const updatedCategory = editCategory.trim();
+    const updatedNote = editNote.trim();
+    await db.runAsync(
+      `UPDATE expenses
+      SET amount = ?, category = ?, note = ?
+      WHERE id = ?;`,
+      [updatedAmount, updatedCategory, updatedNote || null, editing.id]
+    );
+    setEditing(null);
+    loadExpenses();
+  };
   const deleteExpense = async (id) => {
     await db.runAsync('DELETE FROM expenses WHERE id = ?;', [id]);
     loadExpenses();
@@ -102,9 +119,26 @@ export default function ExpenseScreen() {
         {item.note ? <Text style={styles.expenseNote}>{item.note}</Text> : null}
       </View>
 
-      <TouchableOpacity onPress={() => deleteExpense(item.id)}>
-        <Text style={styles.delete}>✕</Text>
-      </TouchableOpacity>
+     <TouchableOpacity
+      style={{ flex: 1 }} onPress={() => {
+        setEditing(item);
+        setEditAmount(String(item.amount));
+        setEditCategory(item.category);
+        setEditNote(item.note || "");
+      }}
+      >
+    <View style={styles.expenseRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.expenseAmount}>${Number(item.amount).toFixed(2)}</Text>
+       <Text style={styles.expenseCategory}>{item.category}</Text>
+        {item.note ? <Text style={styles.expenseNote}>{item.note}</Text> : null}
+    </View>
+
+    <TouchableOpacity onPress={() => deleteExpense(item.id)}>
+      <Text style={styles.delete}>✕</Text>
+    </TouchableOpacity>
+    </View>
+    </TouchableOpacity>
     </View>
   );
 
@@ -182,6 +216,36 @@ export default function ExpenseScreen() {
       </Text>
         ))}
       </View>
+
+      {editing && (
+    <View style={[styles.form, { backgroundColor: "#1f2937", padding: 12, borderRadius: 8 }]}>
+      <Text style={{ color: "white", marginBottom: 8, fontSize: 18 }}>
+       Edit Expense
+     </Text>
+
+     <TextInput
+        style={styles.input}
+        value={editAmount}
+        keyboardType="numeric"
+        onChangeText={setEditAmount}
+      />
+
+      <TextInput
+        style={styles.input}
+        value={editCategory}
+        onChangeText={setEditCategory}
+      />
+
+      <TextInput
+        style={styles.input}
+        value={editNote}
+        onChangeText={setEditNote}
+      />
+
+      <Button title="Save Changes" onPress={saveEdit} />
+      <Button title="Cancel" onPress={() => setEditing(null)} />
+    </View>
+    )}
     
 
       <FlatList
